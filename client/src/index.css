@@ -1,0 +1,354 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Custom colors for Neurofluxion AI */
+  --electric-blue: hsl(190, 100%, 50%);
+  --deep-black: hsl(222, 84%, 5%);
+  --dark-gray: hsl(215, 25%, 15%);
+  --primary-blue: hsl(213, 94%, 68%);
+}
+
+.dark {
+  --background: hsl(222, 84%, 5%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(215, 25%, 15%);
+  --muted-foreground: hsl(217, 10%, 64%);
+  --popover: hsl(222, 84%, 5%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(222, 84%, 5%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(215, 25%, 15%);
+  --input: hsl(215, 25%, 15%);
+  --primary: hsl(190, 100%, 50%);
+  --primary-foreground: hsl(222, 84%, 5%);
+  --secondary: hsl(215, 25%, 15%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(215, 25%, 15%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(217, 10%, 64%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-bounce-slow {
+    animation: bounce 3s infinite;
+  }
+  
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--electric-blue)) 100%);
+  }
+  
+  .glass-effect {
+    backdrop-filter: blur(12px);
+    background: hsla(var(--background), 0.8);
+    border: 1px solid hsla(var(--border), 0.2);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Agent status colors */
+.status-active {
+  @apply bg-green-500;
+}
+
+.status-processing {
+  @apply bg-blue-500;
+}
+
+.status-standby {
+  @apply bg-yellow-500;
+}
+
+.status-ready {
+  @apply bg-purple-500;
+}
+
+.status-error {
+  @apply bg-red-500;
+}
+
+/* Typography enhancements */
+.font-brand {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Message bubbles */
+.message-bubble {
+  @apply rounded-lg p-3 max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.message-bubble-user {
+  @apply bg-primary text-primary-foreground ml-auto;
+}
+
+.message-bubble-assistant {
+  @apply bg-muted text-muted-foreground;
+}
+
+/* File upload area */
+.upload-area {
+  @apply border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200;
+  border-color: hsl(var(--muted-foreground) / 0.25);
+}
+
+.upload-area:hover {
+  @apply border-primary;
+  background-color: hsl(var(--primary) / 0.05);
+}
+
+.upload-area.drag-active {
+  @apply border-primary;
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+/* Voice input button states */
+.voice-button {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.voice-button:hover {
+  @apply scale-105;
+}
+
+.voice-button.recording {
+  @apply animate-pulse;
+  background: linear-gradient(135deg, hsl(var(--destructive)) 0%, hsl(var(--destructive)) 100%);
+}
+
+.voice-button.listening {
+  @apply animate-pulse;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--electric-blue)) 100%);
+}
+
+/* Agent status indicators */
+.agent-status {
+  @apply flex items-center justify-between p-3 rounded-lg transition-all duration-200;
+}
+
+.agent-status:hover {
+  @apply bg-muted;
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.agent-status-dot {
+  @apply w-3 h-3 rounded-full transition-all duration-200;
+}
+
+/* Progress bars */
+.progress-bar {
+  @apply h-2 bg-muted rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full transition-all duration-300 ease-out;
+}
+
+/* Notification styles */
+.notification {
+  @apply fixed top-4 right-4 bg-card border border-border rounded-lg shadow-lg p-4 max-w-sm z-50;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+  @apply border-green-500 bg-green-50;
+  &.dark {
+    background-color: hsl(142 76% 36% / 0.2);
+  }
+}
+
+.notification.error {
+  @apply border-destructive;
+  background-color: hsl(var(--destructive) / 0.1);
+}
+
+.notification.warning {
+  @apply border-yellow-500 bg-yellow-50;
+}
+
+.notification.info {
+  @apply border-blue-500 bg-blue-50;
+}
+
+/* Loading states */
+.loading-shimmer {
+  @apply animate-pulse bg-gradient-to-r from-muted to-muted;
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Responsive design utilities */
+@media (max-width: 768px) {
+  .message-bubble {
+    @apply max-w-xs;
+  }
+  
+  .upload-area {
+    @apply p-4;
+  }
+}
+
+/* Focus states for accessibility */
+.focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border: hsl(0, 0%, 50%);
+    --muted: hsl(0, 0%, 90%);
+    --muted-foreground: hsl(0, 0%, 30%);
+  }
+  
+  .dark {
+    --border: hsl(0, 0%, 60%);
+    --muted: hsl(0, 0%, 20%);
+    --muted-foreground: hsl(0, 0%, 80%);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .animate-pulse-slow,
+  .animate-bounce-slow,
+  .animate-spin-slow {
+    animation: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+}
