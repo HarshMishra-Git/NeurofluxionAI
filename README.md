@@ -106,7 +106,7 @@ flowchart TD
 
 1. **Clone the repository:**
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/HarshMishra-Git/NeurofluxionAI.git
    cd NeurofluxionAI
    ```
 2. **Start with Docker Compose:**
