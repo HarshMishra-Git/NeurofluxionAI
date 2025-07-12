@@ -10,6 +10,7 @@ import json
 from fastapi.responses import StreamingResponse
 import io
 import base64
+from contextlib import asynccontextmanager
 
 from langgraph.graph_flow import create_agent_graph
 from agents.query_handler import QueryHandlerAgent
@@ -78,6 +79,19 @@ agent_statuses = {
     )
     for name in agents.keys()
 }
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        await chroma_client.connect()
+        print("[Startup] ChromaClient initialized successfully.")
+        yield
+    except Exception as e:
+        print(f"[Startup] FATAL: Could not initialize ChromaClient: {e}")
+        import sys
+        sys.exit(1)
+
+app = FastAPI(title="Neurofluxion AI", version="1.0.0", lifespan=lifespan)
 
 @app.get("/")
 async def root():
@@ -209,6 +223,7 @@ async def health_check():
         return {
             "status": "healthy",
             "timestamp": datetime.now().isoformat(),
+            "backend_connected": True,
             "agents": agent_health,
             "services": {
                 "ollama": ollama_status,
@@ -241,9 +256,49 @@ async def synthesize_voice(text: str = Form(...)):
         result = await agents["tts"].synthesize(text)
         audio_b64 = result["audio_data"]
         audio_bytes = base64.b64decode(audio_b64)
+        print(f"[TTS] Audio bytes length: {len(audio_bytes)}")
+        with open("tts_debug.wav", "wb") as f:
+            f.write(audio_bytes)
+        # Validate WAV header (RIFF)
+        if len(audio_bytes) < 44 or audio_bytes[:4] != b'RIFF' or len(audio_bytes) < 100:
+            print("[TTS] Invalid or empty audio, generating robust fallback beep WAV.")
+            import wave, struct, io, math
+            buf = io.BytesIO()
+            with wave.open(buf, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(22050)
+                duration = 1.0
+                freq = 440
+                volume = 0.5
+                for i in range(int(22050 * duration)):
+                    value = int(32767.0 * volume * math.sin(2 * math.pi * freq * i / 22050))
+                    data = struct.pack('<h', value)
+                    wf.writeframesraw(data)
+            buf.seek(0)
+            audio_bytes = buf.read()
+            print(f"[TTS] Fallback beep WAV generated, length: {len(audio_bytes)}")
         return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/wav")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Voice synthesis failed: {str(e)}")
+        print(f"[TTS] Voice synthesis failed: {str(e)}")
+        # Always return a fallback beep WAV on error
+        import wave, struct, io, math
+        buf = io.BytesIO()
+        with wave.open(buf, 'wb') as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(22050)
+            duration = 1.0
+            freq = 440
+            volume = 0.5
+            for i in range(int(22050 * duration)):
+                value = int(32767.0 * volume * math.sin(2 * math.pi * freq * i / 22050))
+                data = struct.pack('<h', value)
+                wf.writeframesraw(data)
+        buf.seek(0)
+        audio_bytes = buf.read()
+        print(f"[TTS] Exception fallback beep WAV generated, length: {len(audio_bytes)}")
+        return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/wav")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

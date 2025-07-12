@@ -13,6 +13,15 @@ class TTSAgent:
         self.status = "ready"
         self.available_engines = ["piper", "coqui", "espeak"]
         self.current_engine = "coqui"  # Default engine is now coqui
+        self.coqui_tts = None
+        try:
+            from TTS.api import TTS
+            import torch
+            gpu_available = torch.cuda.is_available()
+            self.coqui_tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False, gpu=gpu_available)
+            print(f"[TTSAgent] Coqui TTS loaded with GPU: {gpu_available}")
+        except Exception as e:
+            print(f"[TTSAgent] Warning: Could not load Coqui TTS model at init: {e}")
         
     async def synthesize(self, text: str, voice: str = "default", speed: float = 1.0) -> Dict[str, Any]:
         """Synthesize text to speech"""
@@ -78,16 +87,23 @@ class TTSAgent:
     async def _coqui_synthesize(self, text: str, voice: str, speed: float) -> str:
         """Synthesize using Coqui TTS"""
         try:
-            from TTS.api import TTS
             import soundfile as sf
             import io
-            # You can change the model_name to any available Coqui TTS model
-            tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False, gpu=False)
-            # Synthesize speech
-            wav = tts.tts(text)
+            if self.coqui_tts is None:
+                from TTS.api import TTS
+                import torch
+                gpu_available = torch.cuda.is_available()
+                self.coqui_tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False, gpu=gpu_available)
+            wav = self.coqui_tts.tts(text)
             buf = io.BytesIO()
             sf.write(buf, wav, 22050, format='WAV')
             audio_bytes = buf.getvalue()
+            print(f"[TTSAgent] Generated audio bytes length: {len(audio_bytes)}")
+            # Validate WAV header (RIFF)
+            if len(audio_bytes) < 44 or audio_bytes[:4] != b'RIFF':
+                raise Exception("Generated audio is not a valid WAV file.")
+            if len(audio_bytes) < 100:
+                raise Exception("Generated audio is too short or empty.")
             return base64.b64encode(audio_bytes).decode()
         except Exception as e:
             raise Exception(f"Coqui TTS failed: {str(e)}")

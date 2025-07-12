@@ -15,27 +15,7 @@ const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8000';
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Proxy routes to Python backend
-  app.use('/api/chat', async (req, res) => {
-    try {
-      const response = await fetch(`${BACKEND_API_URL}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(req.body),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Backend responded with ${response.status}`);
-      }
-
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      console.error('Chat proxy error:', error);
-      res.status(500).json({ error: 'Failed to communicate with AI backend' });
-    }
-  });
+  // app.use('/api/chat', async (req, res) => { ... });
 
   app.use('/api/upload', upload.single('file'), async (req, res) => {
     try {
@@ -189,11 +169,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
       const { message, conversationId, messageType = 'text' } = req.body;
-      
       if (!message) {
         return res.status(400).json({ error: "Message content is required" });
       }
-
+      // Check for duplicate user message in the last 30 seconds
+      const recentMessages = await storage.getMessages(conversationId || 1);
+      const now = Date.now();
+      const duplicate = recentMessages && recentMessages.find(m =>
+        m.role === 'user' &&
+        m.content === message &&
+        now - new Date(m.createdAt).getTime() < 30000
+      );
+      if (duplicate) {
+        // Return the most recent AI response for this user message
+        const aiMessages = recentMessages.filter(m => m.role === 'assistant' && m.createdAt > duplicate.createdAt);
+        if (aiMessages.length > 0) {
+          return res.json({
+            userMessage: duplicate,
+            aiMessage: aiMessages[0],
+            metadata: aiMessages[0].metadata
+          });
+        } else {
+          return res.json({ userMessage: duplicate, aiMessage: null, metadata: null });
+        }
+      }
       // Save user message locally
       const userMessage = await storage.createMessage({
         conversationId: conversationId || 1,
@@ -203,64 +202,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: null,
         agentUsed: null
       });
-
-      try {
-        // Forward to Python backend
-        const backendResponse = await fetch(`${BACKEND_API_URL}/api/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message,
-            conversation_id: conversationId,
-            message_type: messageType
-          }),
-        });
-
-        if (!backendResponse.ok) {
-          throw new Error(`Backend responded with ${backendResponse.status}`);
-        }
-
-        const backendData = await backendResponse.json();
-        
-        // Save AI response locally
-        const aiMessage = await storage.createMessage({
-          conversationId: conversationId || 1,
-          content: backendData.response,
-          role: 'assistant',
-          messageType: 'text',
-          metadata: backendData.metadata,
-          agentUsed: backendData.agent_used
-        });
-
-        res.json({
-          userMessage,
-          aiMessage,
-          metadata: backendData.metadata
-        });
-
-      } catch (backendError) {
-        console.error('Backend communication failed:', backendError);
-        
-        // Fallback response when backend is unavailable
-        const fallbackResponse = "I apologize, but I'm having trouble connecting to my AI processing backend. Please ensure the Python backend is running and try again.";
-        
-        const aiMessage = await storage.createMessage({
-          conversationId: conversationId || 1,
-          content: fallbackResponse,
-          role: 'assistant',
-          messageType: 'text',
-          metadata: { error: true, fallback: true },
-          agentUsed: 'fallback'
-        });
-
-        res.json({
-          userMessage,
-          aiMessage,
-          metadata: { error: true, fallback: true }
-        });
+      // Forward to Python backend
+      const backendResponse = await fetch(`${BACKEND_API_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message,
+          conversation_id: conversationId,
+          message_type: messageType
+        }),
+      });
+      if (!backendResponse.ok) {
+        throw new Error(`Backend responded with ${backendResponse.status}`);
       }
+      const backendData = await backendResponse.json();
+      // Save AI response locally
+      const aiMessage = await storage.createMessage({
+        conversationId: conversationId || 1,
+        content: backendData.response,
+        role: 'assistant',
+        messageType: 'text',
+        metadata: backendData.metadata,
+        agentUsed: backendData.agent_used
+      });
+      res.json({
+        userMessage,
+        aiMessage,
+        metadata: backendData.metadata
+      });
     } catch (error) {
       console.error('Chat error:', error);
       res.status(500).json({ error: "Failed to process chat message" });

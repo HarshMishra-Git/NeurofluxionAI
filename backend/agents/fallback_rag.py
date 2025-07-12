@@ -35,8 +35,8 @@ class FallbackRAGAgent:
             # Get relevant context
             relevant_context = await self._get_relevant_context(query, context)
             
-            # Generate response using local LLM
-            response = await self._generate_with_llm(query, relevant_context)
+            # Generate response using local LLM (streaming enabled)
+            response = await self._generate_with_llm(query, relevant_context, stream=True)
             
             # Post-process response
             processed_response = await self._post_process_response(response, query)
@@ -99,7 +99,7 @@ class FallbackRAGAgent:
         # For now, return a placeholder
         return f"Based on the query '{query}', I'll provide information from my training data."
     
-    async def _generate_with_llm(self, query: str, context: str) -> str:
+    async def _generate_with_llm(self, query: str, context: str, stream: bool = True) -> str:
         """Generate response using local LLM"""
         try:
             # Format prompt
@@ -113,7 +113,8 @@ class FallbackRAGAgent:
                 model="mistral:latest",
                 prompt=formatted_prompt,
                 max_tokens=1000,
-                temperature=0.7
+                temperature=0.7,
+                stream=stream
             )
             
             return response.strip()

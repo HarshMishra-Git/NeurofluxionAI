@@ -26,13 +26,16 @@ class EmbeddingService:
     
     def _load_model_sync(self):
         """Synchronous model loading"""
-        return SentenceTransformer(self.model_name)
+        import torch
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        return SentenceTransformer(self.model_name, device=device)
     
     async def embed_text(self, text: str) -> List[float]:
         """Generate embedding for a single text"""
-        if not self.is_loaded:
+        if not self.is_loaded or self.model is None:
             await self.load_model()
-        
+        if self.model is None:
+            raise Exception("Embedding model is not loaded.")
         try:
             # Generate embedding in thread to avoid blocking
             embedding = await asyncio.get_event_loop().run_in_executor(
@@ -44,9 +47,10 @@ class EmbeddingService:
     
     async def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """Generate embeddings for multiple texts"""
-        if not self.is_loaded:
+        if not self.is_loaded or self.model is None:
             await self.load_model()
-        
+        if self.model is None:
+            raise Exception("Embedding model is not loaded.")
         try:
             # Generate embeddings in thread to avoid blocking
             embeddings = await asyncio.get_event_loop().run_in_executor(

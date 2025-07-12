@@ -2,6 +2,7 @@ from langchain.schema import BaseMessage, HumanMessage, AIMessage
 from typing import Dict, Any, List, Optional
 import asyncio
 from datetime import datetime
+import time
 
 class AgentGraphFlow:
     """LangGraph-based agent orchestration"""
@@ -13,7 +14,6 @@ class AgentGraphFlow:
     async def process_message(self, message: str, message_type: str = "text", conversation_id: Optional[int] = None) -> Dict[str, Any]:
         """Process message through the agent graph"""
         try:
-            # Initialize graph state
             self.graph_state = {
                 "original_message": message,
                 "message_type": message_type,
@@ -21,34 +21,54 @@ class AgentGraphFlow:
                 "timestamp": datetime.now().isoformat(),
                 "steps": []
             }
-            
+            timings = {}
+            start = time.time()
             # Step 1: Query Analysis
+            t0 = time.time()
             analysis_result = await self._query_analysis_step(message)
+            timings["query_analysis"] = time.time() - t0
+            print(f"[PROFILE] Query analysis: {timings['query_analysis']:.2f}s")
             self.graph_state["steps"].append(analysis_result)
             
-            # Step 2: Route to appropriate agent
+            # Step 2: Routing
+            t0 = time.time()
             routing_result = await self._routing_step(analysis_result)
+            timings["routing"] = time.time() - t0
+            print(f"[PROFILE] Routing: {timings['routing']:.2f}s")
             self.graph_state["steps"].append(routing_result)
             
             # Step 3: Primary processing
+            t0 = time.time()
             processing_result = await self._primary_processing_step(routing_result)
+            timings["primary_processing"] = time.time() - t0
+            print(f"[PROFILE] Primary processing: {timings['primary_processing']:.2f}s")
             self.graph_state["steps"].append(processing_result)
             
             # Step 4: Post-processing (summarization)
+            t0 = time.time()
             summary_result = await self._post_processing_step(processing_result)
+            timings["post_processing"] = time.time() - t0
+            print(f"[PROFILE] Post-processing: {timings['post_processing']:.2f}s")
             self.graph_state["steps"].append(summary_result)
             
             # Step 5: Output processing (TTS if enabled)
+            t0 = time.time()
             output_result = await self._output_processing_step(summary_result)
+            timings["output_processing"] = time.time() - t0
+            print(f"[PROFILE] Output processing: {timings['output_processing']:.2f}s")
             self.graph_state["steps"].append(output_result)
-            
+
+            total = time.time() - start
+            print(f"[PROFILE] Total pipeline: {total:.2f}s")
+
             return {
                 "response": output_result.get("final_response", ""),
                 "agent_used": routing_result.get("selected_agent", "unknown"),
                 "metadata": {
                     "processing_steps": len(self.graph_state["steps"]),
                     "total_processing_time": self._calculate_total_time(),
-                    "graph_state": self.graph_state
+                    "graph_state": self.graph_state,
+                    "profiling": timings
                 }
             }
             

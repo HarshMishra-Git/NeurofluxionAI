@@ -100,14 +100,19 @@ export function VoiceInput({ onVoiceMessage }: VoiceInputProps) {
   return (
     <Button
       onClick={handleClick}
-      variant={isRecording ? "destructive" : "default"}
+      variant="outline"
       size="sm"
-      className={isRecording ? "animate-pulse" : "gradient-bg"}
+      className={`h-12 w-12 rounded-2xl p-0 shadow-md transition-all ${
+        isRecording 
+          ? "animate-pulse bg-red-500 hover:bg-red-600 text-white border-red-500" 
+          : "bg-primary hover:bg-primary/90 text-primary-foreground border-primary"
+      }`}
+      title={isRecording ? "Stop recording" : "Start voice input"}
     >
       {isRecording ? (
-        <Square className="w-4 h-4" />
+        <Square className="w-5 h-5 fill-current" />
       ) : (
-        <Mic className="w-4 h-4" />
+        <Mic className="w-5 h-5" />
       )}
     </Button>
   );
